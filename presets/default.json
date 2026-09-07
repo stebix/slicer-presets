@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "default": "InnerEar",
+  "options": {
+    "applyToNewSegmentations": true,
+    "createOnStartup": false,
+    "openSegmentEditor": false,
+    "sceneGuard": true,
+    "menuAction": true
+  },
+  "presets": [
+    {
+      "name": "InnerEar",
+      "description": "Inner ear structures on ultra-high-resolution CT",
+      "segments": [
+        { "name": "Cochlea",                 "labelValue": 1, "color": "#E6194B" },
+        { "name": "Vestibule",               "labelValue": 2, "color": "#3CB44B" },
+        { "name": "Semicircular canals",     "labelValue": 3, "color": "#4363D8" },
+        { "name": "Internal auditory canal", "labelValue": 4, "color": "#F58231" },
+        { "name": "Vestibular aqueduct",     "labelValue": 5, "color": "#911EB4" }
+      ]
+    }
+  ]
+}
