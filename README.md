@@ -2,10 +2,8 @@
 
 Segment Editor presets for 3D Slicer, defined in JSON and applied automatically:
 every segmentation you create starts with your list of segments (names, order,
-label values, colours). Ships as a Slicer module (or a `~/.slicerrc.py` startup hook), with a launcher
-and a guard/sanitiser for a Slicer 5.10.0 crash that the previous startup
-script triggered on every scene load (fixed upstream in 5.12.3; the guard is
-kept for 5.10.0 and is harmless on 5.12.3).
+label values, colours). Ships as a Slicer module (or a `~/.slicerrc.py` startup
+hook), with a launcher and a command line.
 
 ```
 slicer_presets/           Python package (works inside Slicer and standalone)
@@ -13,7 +11,7 @@ slicer_presets/           Python package (works inside Slicer and standalone)
   scene_files.py          .mrml/.mrb sanitiser              (pure Python)
   rcfile.py, cli.py       rc bootstrap + command line       (pure Python)
   segmentation.py         create/populate segmentation nodes  (Slicer)
-  guard.py                scene-import crash guard            (Slicer)
+  guard.py                scene-import guard                  (Slicer)
   startup.py              install(): wiring at startup        (Slicer)
 SlicerPresets/            Slicer scripted module (recommended install route)
   SlicerPresets.py        module metadata, panel, calls install() at startup
@@ -24,17 +22,16 @@ tests/                    pytest unit tests + Slicer smoke/regression scripts
 
 ## Requirements
 
-* **3D Slicer 5.10.0 or newer**; **5.12.3 is recommended** because it fixes the
-  scene-import crash entirely (see *Why the old setup crashed*).
+* **3D Slicer 5.10.0 or newer**; **5.12.3 or newer is recommended**.
   Download: <https://download.slicer.org>
 * **Nothing else.** Slicer ships its own Python 3.12 (`PythonSlicer`), which runs
   both the startup hook and the `slicer_presets` command line, so no separate
   Python, pip, venv or uv installation is needed to *use* this repository. uv is
   only needed to run the unit tests, or to get `slicer-presets` as a standalone
   command instead of `PythonSlicer -m slicer_presets`.
-* **Windows, macOS and Linux** are all supported. The presets, the panel and the
-  import guard behave identically; only the file paths differ, plus the
-  `launch-slicer.cmd` launcher, which is Windows-only (see *Launcher*).
+* **Windows, macOS and Linux** are all supported. The presets and the panel
+  behave identically; only the file paths differ, plus the `launch-slicer.cmd`
+  launcher, which is Windows-only (see *Launcher*).
 
 ## Where Slicer is installed
 
@@ -249,7 +246,7 @@ segmentation is created at startup unless `createOnStartup` is turned on.
 |---|---|
 | `validate [SPEC]` | parse a spec file and print its presets, colours and options |
 | `show` | print the resolved paths: package, spec, rc file, Slicer executable |
-| `sanitize FILE...` | rewrite `.mrb`/`.mrml` so they load safely on 5.10.0 - see *Sanitising scene files* |
+| `sanitize FILE...` | rewrite `.mrb`/`.mrml` so they load safely on Slicer 5.10.0 - see *Sanitising scene files* |
 | `install-rc` | write the `~/.slicerrc.py` bootstrap |
 | `launch [FILES...]` | start Slicer with the preset environment set - see *Launcher* |
 
@@ -279,7 +276,7 @@ Slicer revision, though, so after a major upgrade you may need to add the
   next to it.
 * **Just for one session:** `--ignore-slicerrc` disables the rc hook (it does
   not disable the module); `slicer-presets launch --no-presets` does the same.
-* **Keep the presets but drop the crash guard:** `"sceneGuard": false` in the
+* **Keep the presets but drop the import guard:** `"sceneGuard": false` in the
   preset options.
 
 ## Launcher
@@ -318,7 +315,6 @@ with the module installed, starting Slicer normally gives you the presets, and
 | New segmentations still come up empty | `applyToNewSegmentations` is off, or the segmentation was **loaded** from a file rather than created - loaded nodes are never touched by design. |
 | Segments appear but with the wrong colours/order | Another spec file is in use. The panel's *Spec file* line shows which one; `SLICER_PRESETS_SPEC` overrides it. |
 | `SLICER_PRESETS_SPEC` seems to be ignored (macOS) | Applications started from the Dock or Finder do not inherit shell variables. Start Slicer from a terminal, or edit the spec file instead. |
-| Slicer **5.10.0** still crashes when opening a scene | The guard must be active *before* the scene loads. Confirm the panel says `import guard on`, or upgrade to 5.12.3, or run `sanitize` on the file. |
 | The panel warns that `~/.slicerrc.py` is also active | Both mechanisms are installed. Harmless, but delete the rc file to keep things clear. |
 | `slicer-presets launch` cannot find Slicer (macOS/Linux) | Automatic detection is Windows-only. Set `SLICER_EXE` or pass `--slicer`. |
 | Nothing works and you need the log | Windows `%LOCALAPPDATA%\Temp\Slicer\Slicer_<version>_*.log`; macOS/Linux the terminal Slicer was started from, or Help > Report a Bug. The hook logs lines starting with `slicer-presets:`. |
@@ -358,8 +354,8 @@ with the module installed, starting Slicer normally gives you the presets, and
   | `applyToNewSegmentations` | true | populate segmentation nodes created empty |
   | `createOnStartup` | false | create a preset segmentation after startup |
   | `skipIfSceneHasSegmentation` | true | ...unless the scene already has one |
-  | `openSegmentEditor` | false | switch to the Segment Editor after that (creates the widget early: keep off on 5.10.0; safe on 5.12.3) |
-  | `sceneGuard` | true | install the import guard |
+  | `openSegmentEditor` | false | switch to the Segment Editor after that |
+  | `sceneGuard` | true | install the scene-import guard |
   | `menuAction` | true | Edit-menu action |
   | `nodeName` | preset name | name of created segmentation nodes |
 
@@ -380,9 +376,9 @@ slicer_presets.install(preset_name="Other")  # switch preset at runtime
 
 ## Sanitising scene files
 
-Makes a scene file safe to open on Slicer 5.10.0 even where the guard is not
-installed - worth doing to any `.mrb` before sharing it with someone whose
-Slicer version you do not know.
+Strips the saved Segment Editor state from a scene file, which makes it safe to
+open on Slicer 5.10.0 - worth doing to any `.mrb` before sharing it with someone
+whose Slicer version you do not know.
 
 ```
 slicer-presets sanitize case.mrb                # -> case.safe.mrb
@@ -410,44 +406,7 @@ reg add "HKCU\Software\Classes\.mrb" /ve /t REG_SZ /d "Slicer" /f
 or point the association at `launch-slicer.cmd` to get the launcher's options.
 
 On macOS and Linux use the desktop environment's own *Open With* / default
-application settings; nothing in this repository is involved either way, and
-opening a scene by double-click never needed the presets - Slicer loads
-command-line files before any startup hook runs.
-
-## Why the old setup crashed
-
-Symptom: Slicer 5.10.0 died while loading a large `.mrb` scene whenever
-`~/.slicerrc.py` was active.
-
-Root cause (reproduced and bisected on this machine, see *Verification*):
-
-1. **Slicer 5.10.0 bug.** Importing a scene whose saved `SegmentEditor` node has an
-   `activeEffectName` (the MRB was saved with the *Islands* effect active) while a
-   Segment Editor widget exists ends in an access violation in
-   `qSlicerSegmentationsModuleWidgets.dll` (Windows event log: exception
-   `0xc0000005`, offset `0x2f3fc`). The singleton editor node is overwritten
-   mid-import and the widget re-activates the effect before node references are
-   resolved. Removing only `activeEffectName` from the scene, or not having the
-   editor widget, avoids the crash. Slicer 5.8.1 loads the same file fine.
-2. **The old rc script made the bug unavoidable.** It created a segmentation at
-   startup and switched to the Segment Editor immediately, so the widget always
-   existed by the time a scene was opened from the GUI.
-
-Other problems in the old design that are fixed here:
-
-* `slicerinit.py` executed `main()` at import time *and* the rc file called it
-  again; each launch ran it twice and logged every line twice (print + logging).
-* The startup segmentation had no reference volume and was discarded as soon as a
-  scene was loaded, so it never helped in the MRB workflow; the "skip if a
-  segmentation exists" gate meant loaded scenes never got the preset either.
-* The rc file's `startupCompleted` handling was guesswork: in 5.8+ the rc file
-  runs *after* command-line files were loaded and the window is shown, so the
-  signal never fires for it.
-* Everything lived on the Desktop with hard-coded paths.
-
-Note: files opened by **double-clicking** never crashed, because Slicer loads
-command-line files *before* the rc file. Also, the `.mrb` association on this PC
-points at `Slicer 5.8.1\Slicer.exe`, not 5.10.0 (see *File association*).
+application settings; nothing in this repository is involved either way.
 
 ## Design
 
@@ -469,35 +428,14 @@ points at `Slicer 5.8.1\Slicer.exe`, not 5.10.0 (see *File association*).
     preset. Slicer's placeholder `Segment_1` is re-purposed as the first preset
     segment, so nothing stray is left. Nodes coming from a scene import or a
     loaded `.seg.nrrd` are never touched;
-  * installs the **import guard**: on `StartImportEvent` the Segment Editor widget
-    is detached from its parameter node; on `EndImportEvent` the saved
-    `activeEffectName` is cleared on the imported editor node before anything
-    re-attaches, then the widget is re-attached and the scene's segmentation and
-    source volume are re-selected in the editor once the node lists have been
-    refilled. This makes the 5.10.0 crash scenario load cleanly (verified with
-    the original MRB, with and without clearing the scene). Only the remembered
-    active effect is lost;
+  * installs the **import guard**, which detaches the Segment Editor widget for
+    the duration of a scene import and re-selects the scene's segmentation and
+    source volume afterwards. Only the remembered active effect is lost. It is
+    on by default and can be turned off with `"sceneGuard": false`;
   * adds *Edit > Apply segment preset '<name>'* (applies to the editor's current
     segmentation, or creates one);
-  * optionally (`createOnStartup`) reproduces the old behaviour.
+  * optionally (`createOnStartup`) creates a preset segmentation at startup.
 * The preset is a plain JSON file; several presets per file, selectable by name.
-* `slicer-presets sanitize` rewrites `.mrb`/`.mrml` files so they are safe to load
-  on 5.10.0 even without the guard (e.g. on another machine).
-
-## Upstream
-
-The crash was a Slicer regression in 5.10.0 only: 5.8.1 loaded the scene fine and
-**5.12.3 fixes it** (re-checked 2026-09-07 with the same unguarded script - see
-*Verification*). On 5.12.3 the same import logs a warning instead of faulting
-(`updateEffectsSectionFromMRML: Cannot activate effect, failed to set binary
-labelmap as source representation`) and ends with no active effect - the same end
-state the guard produces. Minimal reproduction for the record: open the Segment
-Editor, then load any scene saved while an effect was active (`activeEffectName`
-set on the `SegmentEditor` node).
-
-The guard is therefore no longer *needed* on 5.12.3, but it is still harmless
-there (the regression test passes) and still required for 5.10.0, so it stays on
-by default. Turn it off per preset with `"sceneGuard": false`.
 
 ## Verification
 
@@ -513,33 +451,8 @@ Slicer.exe --no-splash --ignore-slicerrc --additional-module-path SlicerPresets 
 it installs the hook at startup with no rc file present, and that the panel and
 its buttons work.
 
-`gui_regression.py` replays the original crash: opens the Segment Editor at
-startup, imports a scene twice, and checks that the preset is applied to
-segmentations created before and after the import. Point
-`SLICER_PRESETS_TEST_MRB` at a scene of your own that was saved while a Segment
-Editor effect was selected; without it the test reports SKIP.
-
-Bisection performed on this machine (Slicer 5.10.0 r34045, Windows 11), each case a
-separate GUI launch that loads the example MRB from a timer:
-
-| Segment Editor open | scene | result |
-|---|---|---|
-| no | original MRB | OK |
-| yes | original MRB | crash |
-| yes | original, `SegmentEditor` node removed | OK |
-| yes | original, only `activeEffectName` removed | OK |
-| yes | original, only `selectedSegmentID` removed | crash |
-| yes | synthetic MRB (no active effect) | OK |
-| yes, on Slicer 5.8.1 | original MRB | OK |
-| yes, with import guard | original MRB | OK |
-
-Re-checked on **Slicer 5.12.3** (2026-09-07), after 5.8.1 was uninstalled:
-
-| test | result |
-|---|---|
-| `pytest` (29 unit tests) | pass |
-| `smoke_headless.py` on 5.12.3 | pass, incl. MRB import |
-| `gui_regression.py` on 5.12.3 (guard active) | pass |
-| `module_regression.py` on 5.12.3, headless and GUI | pass |
-| unguarded: editor open + original MRB on 5.12.3 | **no crash** (fixed upstream) |
-| same unguarded script on 5.10.0 | crash, as before (control) |
+`gui_regression.py` opens the Segment Editor at startup, imports a scene twice,
+and checks that the preset is applied to segmentations created before and after
+the import. Point `SLICER_PRESETS_TEST_MRB` at a scene of your own that was
+saved while a Segment Editor effect was selected; without it the test reports
+SKIP.
