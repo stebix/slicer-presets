@@ -80,7 +80,7 @@ The installation is the same on all three platforms - only the paths change.
 ### Step 1 - get the files
 
 ```
-git clone <repository-url> slicer-presets
+git clone https://github.com/stebix/slicer-presets.git
 ```
 
 Put the clone somewhere permanent, because Slicer stores its absolute path:

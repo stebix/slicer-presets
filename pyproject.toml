@@ -6,6 +6,10 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
 
+[project.urls]
+Repository = "https://github.com/stebix/slicer-presets"
+Issues = "https://github.com/stebix/slicer-presets/issues"
+
 [project.scripts]
 slicer-presets = "slicer_presets.cli:main"
 
